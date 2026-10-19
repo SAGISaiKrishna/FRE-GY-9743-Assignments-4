@@ -108,20 +108,43 @@ class Interpolator1DPCP(Interpolator1D):
         assert self.extrap_method_ == ExtrapMethod.FLAT
 
     def interpolate(self, x: float) -> float:
-        #TODO
-        pass
+        index = np.searchsorted(self.axis1_, x, side='left')
+        index = min(index, self.length_ - 1)
+        return float(self.values_[index])
 
     def integrate(self, start_x: float, end_x: float) -> float:
-        #TODO
-        pass
+        weights = self.gradient_of_integrated_value_wrt_ordinate(
+            start_x, end_x
+        )
+        return float(np.dot(weights, self.values_))
 
     def gradient_wrt_ordinate(self, x: float) -> np.ndarray:
-        #TODO
-        pass
+        gradient = np.zeros(self.length_, dtype=float)
+        index = np.searchsorted(self.axis1_, x, side='left')
+        index = min(index, self.length_ - 1)
+        gradient[index] = 1.0
+        return gradient
 
     def gradient_of_integrated_value_wrt_ordinate(self, start_x: float, end_x: float) -> np.ndarray:
-        #TODO
-        pass
+        if start_x == end_x:
+            return np.zeros(self.length_, dtype=float)
+
+        if start_x > end_x:
+            return -self.gradient_of_integrated_value_wrt_ordinate(
+                end_x, start_x
+            )
+
+        gradient = np.zeros(self.length_, dtype=float)
+
+        left_edges = np.concatenate(([-np.inf], self.axis1_[:-1]))
+        right_edges = np.concatenate((self.axis1_[:-1], [np.inf]))
+
+        for i, (left, right) in enumerate(zip(left_edges, right_edges)):
+            overlap_left = max(start_x, left)
+            overlap_right = min(end_x, right)
+            gradient[i] = max(0.0, overlap_right - overlap_left)
+
+        return gradient
 
 
 
